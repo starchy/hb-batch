@@ -75,12 +75,18 @@ def recvall(s, length, timeout=5):
     rdata = ''
     remain = length
     while remain > 0:
-        rtime = endtime - time.time() 
+        rtime = endtime - time.time()
         if rtime < 0:
             return None
         r, w, e = select.select([s], [], [], 5)
         if s in r:
-            data = s.recv(remain)
+            try:
+                data = s.recv(remain)
+            except socket.error, (value, message):
+                if s:
+                    s.close()
+                    print message
+                    return None
             # EOF?
             if not data:
                 return None
